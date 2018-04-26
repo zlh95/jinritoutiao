@@ -105,7 +105,7 @@ def zhihu_login(account, password):
     })
     time_str = str(int((time.time() * 1000)))
     # 直接写在引号内的值为固定值，
-    # 只要知乎不改版反爬虫措施，这些值都不湖边
+    # 只要知乎不改版反爬虫措施，这些值都不会变
     post_data = {
         "client_id": "c3cef7c66a1843f8b3a9e6a1e3160e20",
         "grant_type": "password",
