@@ -13,3 +13,6 @@ class Local(object):
 
     def __getattr__(self, item):
         return self.storage[self.ident][item]
+
+    
+#类似实现ThreadLocal结构，通过字典的方式，让每个线程保存的数据独立，互不影响。
