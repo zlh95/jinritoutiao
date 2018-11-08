@@ -99,13 +99,13 @@ class Average:
 10.5
 
 def make_averager(new_value):
-    -------------------------------
-	|series = []                  |
-	|def averager(new_value):     |
+        -----------------------------------
+	|series = []                      |
+	|def averager(new_value):         |
 	|	series.append(new_value)  | ----> 闭包，在averager函数中，series是自由变量（指未在本地作用域上绑定的变量）
 	|	total = sum(series)       |
 	|	return total/len(series)  |
-	|-----------------------------|
+	|---------------------------------|
 	return averager
 
 >> avg = make_averager()
