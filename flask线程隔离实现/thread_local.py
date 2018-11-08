@@ -2,7 +2,7 @@ from threading import Thread,get_ident
 
 '''核心思想就是，用线程的标识符（唯一的）作为键，
 这样每个线程都存储了唯一的值，互不干扰
-比如说request对象，每个线程中request对象都是不同的，每一个请求进来，request对象都不一样。
+比如说flask request对象，每个线程中request对象都是不同的，每一个请求进来，request对象都不一样。
 '''
 class Local(object):
 
