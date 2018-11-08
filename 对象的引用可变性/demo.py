@@ -69,7 +69,7 @@ bus3 = copy.deepcopy(bus1)
 
 print(id(bus1),id(bus2),id(bus3)) #123,456,789
 bus1.drop('Bill')
-bus2.passengers #['Alice','Claire','David']
+bus2.passengers #['Alice','Claire','David']  #bus2是bus1的浅复制，即bus2共享了bus1内部对象的引用，所以他们共享一个列表引用
 print(id(bus1.passengers),id(bus2.passengers),id(bus3.passengers)) #321,321,987 
 bus3.passengers #['Alice','Bill','Claire','David']
 
@@ -96,13 +96,18 @@ a,b #((1,2),(3,4)) #不可变对象
 
 '''
 注意：千万不要使用可变类型作为参数的默认值
+
+解释一下下面例子的现象，没有指定初始乘客的HauntedBus实例会共享一个乘客列表。如果不为HauntedBus实例指定乘客的话，self.passengers变成了passengers参数默认值
+的别名，出现这种问题的根源就是默认值在定义函数时计算（通常在加载模块时），因此默认值变成了函数对象的属性（可以这样理解，修改函数对象的属性时，由于它是可变对象，
+对它的修改反应到了对象自身的其他引用上），因此，如果默认值是可变对象，而且修改了它的值，那么后续
+的函数调用都会受到影响，。
 '''
 class HauntedBus:
-	def __init__(self,passengers=[]):
-		self.passengers = passengers
+	def __init__(self,passengers=[]):  
+		self.passengers = passengers    #这个赋值语句把self.passengers变成了passengers的别名，而没有传入passengers参数时，后者又是默认列表的别名。
 
-	def pick(self,name):
-		self.passengers.append(name)
+	def pick(self,name):            
+		self.passengers.append(name)  #在self.passengers上调用.remove()和.append()方法时，修改的其实是默认列表，它是函数对象的一个属性。
 
 	def drop(self,name):
 		self.passengers.remove(name)
@@ -112,8 +117,43 @@ bus1.passengers  #['Alice','Bill']
 bus1.pick('Claire')
 bus1.drop('Alice')
 bus1.passengers # ['Bill','Claire']
+
 bus2 = HauntedBus()
 bus2.pick('Carrie')
 bus2.passengers #['Carrie']
-bus3 = HauntedBus()
 
+bus3 = HauntedBus()
+bus3.passengers #['Carrie']诡异的出现一名乘客
+bus3.pick('Dave')
+bus2.passengers #['Carrie','Dave'] bus2里面诡异的多出来一名乘客
+
+bus2.passengers is bus3.passengers #True
+
+bus1.passengers #['Bill','Claire']
+
+
+
+'''
+防御可变参数的方法
+'''
+
+class HauntedBus:
+	def __init__(self,passengers=None):
+		if passengers is None:
+			self.passengers =[]
+		else:  
+			self.passengers = list(passengers)    
+
+	def pick(self,name):            
+		self.passengers.append(name)  
+
+	def drop(self,name):
+		self.passengers.remove(name)
+
+
+
+'''
+总结一下浅复制和深复制的特点：
+	1.浅复制，复制了对象的最外层容器，副本中的元素是源容器中元素的引用。
+	2.深复制，即副本不共享内部对象的引用。
+'''
