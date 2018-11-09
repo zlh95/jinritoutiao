@@ -145,3 +145,43 @@ def make_averager():
 		return total/count
 
 # nonlocald的作用是把变量标记为自由变量，即便在函数中为变量赋予了新值，也会成为自由变量。
+
+
+#装饰器原理解析
+#输出函数运行时间的装饰器
+#clockdeco.py
+import time 
+
+def clock(func):
+	def clocked(*args):
+		t0 = time.perf_counter()
+		result = func(*args)   #这一行代码执行不会报错，是因为clocked闭包中包含自由变量func
+		elapsed = time.perf_counter() - t0
+		name = func.__name__
+		arg_str = ', '.join(repr(arg) for arg in args)
+		print('[%0.8fs] %s(%s) ->'%(elapsed,name,arg_str,result))
+		return result
+	return clocked   #返回内部函数，取代被装饰的函数
+
+-----------------------------------------
+#clock_demo.py
+from clockdeco import clock
+
+@clock
+def factorial(n):
+	return 1 if n <2 else n*factorial(n-1)
+
+#这个其实等价于
+def factorial(n):
+	return 1 if n <2 else n*factorial(n-1)
+factorial = clock(factorial)
+
+#因此，上面两个表达方式中，factorial都会作为参数传给clock,然后，clock函数会返回clocked函数对象，python解释器在背后会把clocked赋值给factorial.
+#导入clock_demo模块后查看factorial的__name__属性，会有如下结果:
+>> import clock_demo
+>> clock_demo.factorial.__name__
+'clocked'
+#所以现在factorial保存的是clocked函数的引用，自此以后，每次调用factorial(n)，执行的都是clocked(n)。
+#这就是装饰器典型的行为：把被装饰的函数替换成新的函数，二者接受相同的参数，而且（通常）返回被装饰的函数本该返回的值，同时还会做一些额外操作。
+#使用functools.warps装饰器把相关的属性从被装饰的函数复制到clocked中，最后被装饰的函数的__name__属性指向自己。
+#functools.lru_cache实现的备忘的功能，他把耗时的操作保存起来，避免传入相同的参数重复计算。例如斐波那契数列这种。
