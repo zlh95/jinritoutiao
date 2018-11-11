@@ -68,3 +68,5 @@ class Vector:
 		else:
 			msg = '{cls.__name__} indices must be integers'
 			raise TypeError(msg.format(cls=cls))
+#这个类告诉我们，在内置序列中，传入的seq[]中的参数，首先会做类型检查（检查是slice对象，还是简单的索引整数），然后根据类型返回不同的结果。
+#序列切片之所以能实现，最主要的原因的slice对象的indices方法的功劳。
