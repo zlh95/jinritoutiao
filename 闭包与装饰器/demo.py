@@ -256,7 +256,7 @@ def clock(fmt = DEFAULT_FMT):
 			name = func.__name__
 			args = ', '.join(repr(arg) for arg in args)
 			result = repr(_result)
-			print(fmt.format(**locals()))
+			print(fmt.format(**locals()))   #这里是为了在fmt中引用clocked函数中局部变量
 			return _result
 		return clocked
 	return decorate
