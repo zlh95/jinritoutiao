@@ -69,3 +69,36 @@ class Weather(Iterable):
 w = Weather(['长沙', '上海', '深圳', '北京'])
 for i in w:
     print(i)
+
+
+
+    #补充一个：深入分析iter函数
+Docstring:
+iter(iterable) -> iterator
+iter(callable, sentinel) -> iterator
+
+Get an iterator from an object.  In the first form, the argument must
+supply its own iterator, or be a sequence.
+In the second form, the callable is called until it returns the sentinel.
+
+1.常用的方式就是在迭代对象x的时候会调用iter(x)
+2.还有一种鲜为人知的方法：传入两个参数，使用常规的函数或任何可调用的对象创建迭代器。这样使用时，第一个参数
+必须是可调用对象，用于不断调用(没有参数),产出的各个值；第二个参数是哨符，这是个标记值，当可调用的对象返回
+这个值的时候，触发迭代器抛出StopIteration的异常而产生哨符。
+
+def func():
+    return randint(1,6)
+
+>> f_iter = iter(func,1)
+>> f_iter
+<callable_iterator object at 0xxxxxx>
+>> for roll in f_iter:
+     print(roll)
+4
+3
+6
+2
+#有个好用的方法，这段代码逐行的读取文件，直到遇到空行或到达文件末尾
+with open('text.txt','r') as f:
+    for line in iter(f.readline,'\n'):
+        process_line(line)
