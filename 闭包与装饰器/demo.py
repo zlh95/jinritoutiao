@@ -161,7 +161,7 @@ def clock(func):
 		arg_str = ', '.join(repr(arg) for arg in args)
 		print('[%0.8fs] %s(%s) ->'%(elapsed,name,arg_str,result))
 		return result
-	return clocked   #返回内部函数，取代被装饰的函数
+	return clocked   #返回内部函数，取代被装饰的函数,被装饰的函数有参数的话，需要在包装一层函数，处理被装饰函数的参数。。
 
 -----------------------------------------
 #clock_demo.py
@@ -184,4 +184,86 @@ factorial = clock(factorial)
 #所以现在factorial保存的是clocked函数的引用，自此以后，每次调用factorial(n)，执行的都是clocked(n)。
 #这就是装饰器典型的行为：把被装饰的函数替换成新的函数，二者接受相同的参数，而且（通常）返回被装饰的函数本该返回的值，同时还会做一些额外操作。
 #使用functools.warps装饰器把相关的属性从被装饰的函数复制到clocked中，最后被装饰的函数的__name__属性指向自己。
-#functools.lru_cache实现的备忘的功能，他把耗时的操作保存起来，避免传入相同的参数重复计算。例如斐波那契数列这种。
+#functools.lru_cache实现的备忘(缓存)的功能，他把耗时的操作保存起来，避免传入相同的参数重复计算。例如斐波那契数列这种。
+
+#叠放装饰器的效果如下
+@d1
+@d2
+def func():
+	print('f')
+#等同于
+def func():
+	print('f')
+func = d1(d2(func))
+
+
+'''
+参数化装饰器，怎么让装饰器接受其他的参数？答案是：创建一个装饰器工厂函数，把参数传给他，返回一个装饰器，然后
+再把它应用到要装饰的函数上。类似于flask创建app的工厂函数create_app()函数，将所有app初始化工作放到该函数下，例如，
+环境配置，蓝图注册，其他插件注册等，然后返回app对象。
+'''
+#引用上面例子
+registry = []
+
+def register(func):
+	print('running register(%s)'%func)
+	registry.append(func)
+	return func
+
+@register
+def f1():
+	print('running f1()')
+
+print('running f1()')
+print('registry ->',registry)
+f1()
+
+#为了便于启用或禁用registry执行的函数注册功能，我们为它提供一个可选的active参数.这是下面的registry函数不是装饰器，
+#而是装饰器工厂函数，调用它返回真正的装饰器。
+
+registry = set()
+
+def registry(active=False):
+	def decorte(func):
+		print('running registry(active=%s)->decorate(%s)' % (active,func))
+		if active:
+			registry.add(func)
+		else:
+			registry.discard(func)
+		return func
+	return decorate
+
+@registry(active=True)
+def f1():
+	print('running f1()')
+
+@registry()
+def f2():
+	print('running f2()')
+
+
+#借用上面例子，实现参数化的clock装饰器
+import time 
+
+DEFAULT_FMT = '[{elapsed:0.8f}s] {name}({args}) -> {result}'
+
+def clock(fmt = DEFAULT_FMT):
+	def decorate(func):
+		def clocked(*args):
+			t0 = time.time()
+			_result = func(*args)
+			elapsed = time.time() - t0
+			name = func.__name__
+			args = ', '.join(repr(arg) for arg in args)
+			result = repr(_result)
+			print(fmt.format(**locals()))
+			return _result
+		return clocked
+	return decorate
+
+if __name__ == '__main__':
+	@clock
+	def snooze(seconds):
+		time.sleep(seconds)
+	for i in range(3):
+		snooze(.123)
