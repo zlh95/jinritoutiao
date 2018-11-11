@@ -47,3 +47,24 @@ S.slice(len) -> (start,stop,stride)
 (2,5,1)
 >> 'ABCDE'[:10:2] 等同于 'ABCDE'[0:5:2]
 >> 'ABCDE'[-3:]   等同于 'ABCDE'[2:5:1]
+
+
+#实现一个能处理切片的__getitem__方法
+
+class Vector:
+	def __init__(self,components):
+		self.components = list(components)
+	
+	def __len__(self):
+		return len(self.components)
+
+	def __getitem__(self,index):
+		cls = type(self)
+		if isinstance(index,slice):
+			return cls(self.components[index])
+		elif isinstance(index,numbers.Integral):
+			return self.components[index]
+
+		else:
+			msg = '{cls.__name__} indices must be integers'
+			raise TypeError(msg.format(cls=cls))
