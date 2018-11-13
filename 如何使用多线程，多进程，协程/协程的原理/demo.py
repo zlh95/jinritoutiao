@@ -186,6 +186,54 @@ Result(count=3,average=15.5)
 '''
 
 #使用yield from
-#yield from的作用比yield的作用要多，在新版本的python中可以用await关键字代替它，这个名称好多了，因为它传达了至关重要的
-#一点：在生成器gen中使用yield from subgen()时，subgen()会获得控制权（联想一下for循环），把产出的值传给gen的调用方，
-#即调用方可以直接控制sugen()。与此同时，gen会阻塞，等待suben终止。
+1.yield from的作用比yield的作用要多，在新版本的python中可以用await关键字代替它，这个名称好多了，因为它传达了至关重要的
+一点：在生成器gen中使用yield from subgen()时，subgen()会获得控制权（联想一下for循环，for循环在内部处理了StopIteration
+异常，因为yield from 也是一个生成器，每次调用时，使用next(gen)或者gen.send(x)去让生成器，也就是迭代器向前运行一步，就可以从调
+用方把值通过yield from开辟一个管道，送到子生成器，而for循环是不支持iterator.send(x)方法的。），把产出的值传给gen的调用方，
+即调用方可以直接控制sugen()。与此同时，gen会阻塞，等待suben终止。
+2.yield form x表达式对x对象所做的第一件事就是，调用iter(x),从中获取迭代器，x可以是任何可迭代对象。
+3.yield from 的主要功能是打开双向通道，把最外层的调用方与最内层的子生成器连接起来，这样二者可以直接发送和产出值，
+还可以直接传入异常，而不用在位于中间的协程中添加大量异常处理的样板代码。有了这个结构，协程可以通过以前不可能的方式
+委托职责。
+4.理清三个术语，‘委派生成器’:包含yield from <iterable>表达式的生成器函数。‘子生成器’：从yield from 表达式中<iterable>
+部分获取的生成器。‘调用方’：这个术语指调用委派生成器的客户端代码，我们统一使用客户端来表示。
+
+#使用yield from计算平均值并输出统计报告
+
+from collections import namedtuple
+
+Result = namedtuple('Result',['count','average'])
+def averager():
+	total = 0.0
+	count = 0 
+	average = None
+	while True:
+		term = yield
+		if term is None:
+			break  #为了返回值协程必须正常终止。
+		total += term
+		count += 1
+		average = total/count
+	return Result(count,average)
+
+#委派生成器
+def grouper(results,key):
+	results[key] = yield from averager()
+
+#客户端代码，即真正的调用方
+def main(data):
+	results = {}
+	for key,values in data.items():
+		group = grouper(results,key)
+		next(grouper)
+		for value in values:
+			grouper.send(value)
+		grouper.send(None)
+
+	report(results)
+
+#输出报告
+def report(results):
+	for key,result in sorted(results.items()):
+		group,unit = key.split(';')
+		print('{:2} {:5} averaging {:.2f}{}'.format(result.count,group,result.average.unit))
