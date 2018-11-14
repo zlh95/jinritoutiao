@@ -36,7 +36,7 @@ slice(1,4,2)
 (slice(1,4,2),slice(7,9,None))
 
 #在使用dir()方法审查slice对象时，有一个特别重要的方法，indices()方法。
-S.slice(len) -> (start,stop,stride)
+S.indices(len) -> (start,stop,stride)
 	给定长度为len的序列，计算S(slice对象)表示的扩展的起始(start)和结尾(stop)索引，以及步幅(stride)。
 超出边界的索引会被截掉，这与常规的切片方式的处理方式一样。
 	换句话说，indices方法开放了内置序列的棘手逻辑，用于优雅的处理确实索引和负索引，以及长度超过目标序列的切片。

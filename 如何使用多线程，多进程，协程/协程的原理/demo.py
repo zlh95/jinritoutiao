@@ -237,3 +237,35 @@ def report(results):
 	for key,result in sorted(results.items()):
 		group,unit = key.split(';')
 		print('{:2} {:5} averaging {:.2f}{}'.format(result.count,group,result.average.unit))
+
+data = {
+	'girls;kg':
+		[40.9,38.5,44.3,42.2,45.2,,41.7,44.5,38.0,40.6,44.5],
+	'girls;m':
+		[1.6,1.51,1.4,1.3,1.41,1.39,1.33,1.46,1.45,1.43],
+	'girls;kg':
+		[40.9,38.5,44.3,42.2,45.2,,41.7,44.5,38.0,40.6,44.5],
+	'girls;m':
+		[1.6,1.51,1.4,1.3,1.41,1.39,1.33,1.46,1.45,1.43],
+}
+if __name__ == '__main__':
+	main(data)
+
+#简化的伪代码，等效于委派生成器中的 RESULT = yield from EXPR，针对只处理StopIteration的异常。
+_i = iter(EXPR)
+try:
+	_y = next(_i)
+except StopIteration as _e:
+	_r = _e.value
+else:
+	while 1:
+		_s = yield _y
+		try:
+			_y = _i.send(_s)
+		except StopIteration as _e:
+			_r = _e.value
+			break
+RESULT = _r
+
+_i 迭代器，_y 子生成器产出的值，_r 最终的结果（即子生成器运行结束之后yield from表达式的值。）
+_s 调用方发给委派生成器的值，这个值会转发给子生成器 _e 异常对象
