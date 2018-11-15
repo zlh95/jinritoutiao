@@ -269,3 +269,66 @@ RESULT = _r
 
 _i 迭代器，_y 子生成器产出的值，_r 最终的结果（即子生成器运行结束之后yield from表达式的值。）
 _s 调用方发给委派生成器的值，这个值会转发给子生成器 _e 异常对象
+
+#下面利用协程实现一个出租车队运营仿真
+from collections import namedtuple
+from random import randint
+from queue import PriorityQueue
+
+Event = namedtuple('Event',['time','proc','action'])
+
+def taxi_process(ident,trips,start_time=0):
+    '''每次改变状态时创建事件，把控制权交给仿真器
+		ident:车辆标识
+		trips:出租车回家之前的行程总数
+		start_time：出租车离开车库的时间
+    '''
+    time = yield Event(start_time,ident,'leave garage')
+    for i in range(trips):
+        time = yield Event(time,ident,'pike up passenger')
+        time = yield Event(time,ident,'drop off passenger')
+    yield Event(time,ident,'going home')
+    #出租车进程结束
+
+#建立一个字典，字典的键表示出租车的编号，值是taxi_process协程
+taxi = {i : taxi_process(i , randint(3,8) , i * 2) for i in range(4)}
+
+class Simulation:
+	def __init__(self,proc_map):
+		self.events = PriorityQueue()   #优先队列，按照时间正向顺序
+		self.proc_map = dict(proc_map)
+
+	def run(self,end_time):
+		'''
+		排定并显示事件，直到事件结束
+		'''
+		#排定各出租车的第一个事件
+		for _ , proc in sorted(self.proc_map.items()):
+			first_event = next(proc)
+			self.events.put(first_event)
+
+		#仿真的主循环
+		sim_time = 0 
+		while sim_time < end_time:
+			if self.events.empty():
+				print('*** end of simulation ***')
+				break
+
+			current_event = self.events.get()
+			sim_time , proc_id , previous_action = current_event
+			print('taxi :',proc_id,proc_id*'  ' ,current_event)
+			active_proc = self.proc_map[proc_id]
+			next_time = sim_time + randint(3,9)
+			try:
+				next_event = active_proc.send(next_time)
+			except StopIteration:
+				del self.proc_map[proc_id]
+
+			else:
+				self.events.put(next_event)
+		else:
+			msg = '*** end of simulation time : {} events pending '
+			print(msg.format(self.events.qsize()))
+
+s = Simulation(taxi)
+s.run(10000)
