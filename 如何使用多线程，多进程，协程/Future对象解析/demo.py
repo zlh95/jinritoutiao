@@ -1,0 +1,11 @@
+1.标准库中有两个名为Future的类，concurrent.futures.Future和asyncio.Future。这两个类的作用相同：两个Future类的实例都可以
+表示可能或者尚未完成的延迟计算。类似于Twisted引擎中的Deferred类，Tornado框架中的Future类。
+2.concurrent.futures模块提供了一个用于异步执行callables的高级接口。
+3.futures封装待完成的操作，可以放入队列，完成的状态可查询，得到结果（或抛出异常）后可以获取结果。
+4.通常情况下，我们不应该自己创建future，而只能由并发框架（concurrent.futures或asyncio）实例化，原因很简单，因为future表示
+终将发生的事情，而确定某件事情会发生的唯一方式是执行的时间已经排定.因此，只有排定把某件事交给concurrent.futures.Executor
+子类处理时，才会创建concurrent.future.Future实例，例如Executor.submit()方法的参数是一个可调用对象，调用这个方法后会为传入
+的可调用对象排期，并返回一个future。
+5.客户端的代码不应该改变future的状态，并发框架在future表示的延迟计算结束后会改变future的状态，而我们无法控制计算何时结束。
+
+ 
