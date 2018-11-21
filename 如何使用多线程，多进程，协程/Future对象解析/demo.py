@@ -107,3 +107,61 @@ if __name__ == '__main__':
             print('%r page is %d bytes' % (url, len(data)))
 #map函数与内置的map函数相似，返回一个迭代器。在map函数内部fs = [self.submit(fn, *args) for args in zip(*iterables)]
 #对每个函数都调用了submit方法，排定可调用对象的执行时间,返回一个future对象.
+
+
+'''Implements ProcessPoolExecutor.
+
+The follow diagram and text describe the data-flow through the system:
+
+|======================= In-process =====================|== Out-of-process ==|
+
++----------+     +----------+       +--------+     +-----------+    +---------+
+|          |  => | Work Ids |    => |        |  => | Call Q    | => |         |
+|          |     +----------+       |        |     +-----------+    |         |
+|          |     | ...      |       |        |     | ...       |    |         |
+|          |     | 6        |       |        |     | 5, call() |    |         |
+|          |     | 7        |       |        |     | ...       |    |         |
+| Process  |     | ...      |       | Local  |     +-----------+    | Process |
+|  Pool    |     +----------+       | Worker |                      |  #1..n  |
+| Executor |                        | Thread |                      |         |
+|          |     +----------- +     |        |     +-----------+    |         |
+|          | <=> | Work Items | <=> |        | <=  | Result Q  | <= |         |
+|          |     +------------+     |        |     +-----------+    |         |
+|          |     | 6: call()  |     |        |     | ...       |    |         |
+|          |     |    future  |     |        |     | 4, result |    |         |
+|          |     | ...        |     |        |     | 3, except |    |         |
++----------+     +------------+     +--------+     +-----------+    +---------+
+
+Executor.submit() called:
+- creates a uniquely numbered _WorkItem and adds it to the "Work Items" dict
+	创建一个唯一编号的_WorkItem并将其添加到“Work Items”字典中
+
+- adds the id of the _WorkItem to the "Work Ids" queue
+	将_WorkItem的id添加到“Work Ids”队列
+
+
+Local worker thread:
+- reads work ids from the "Work Ids" queue and looks up the corresponding
+  WorkItem from the "Work Items" dict: if the work item has been cancelled then
+  it is simply removed from the dict, otherwise it is repackaged as a
+  _CallItem and put in the "Call Q". New _CallItems are put in the "Call Q"
+  until "Call Q" is full. NOTE: the size of the "Call Q" is kept small because
+  calls placed in the "Call Q" can no longer be cancelled with Future.cancel().
+
+	从“Work Ids”队列中读取工作ID，并从“Work Items”中查找相应的WorkItem：如果工作项已被取消，
+则只需将其从dict中删除，否则将其重新打包为_CallItem并放入“Call Q”。新的_CallItems被置于
+“Call Q”中，直到“Call Q”已满。 注意：“Call Q”的大小保持较小，因为使用Future.cancel（）无法
+再取消“Call Q”中的调用。
+
+- reads _ResultItems from "Result Q", updates the future stored in the
+  "Work Items" dict and deletes the dict entry
+
+  从“Result Q”读取_ResultItems，更新存储在“Work Items”dict中的future,并删除Work Items
+
+Process #1..n:
+- reads _CallItems from "Call Q", executes the calls, and puts the resulting
+  _ResultItems in "Result Q"
+
+  从“Call Q”读取_CallItems，执行调用，并将生成的_ResultItems放入“Result Q”
+
+'''
